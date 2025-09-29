@@ -103,8 +103,8 @@ You can also import it:
 import asyncio
 import aiohttp
 
-from gsvpd.core import fetch_panos
-from gsvpd.my_utils import timer
+from gsvpd import fetch_panos
+from gsvpd import timer
 from rich import print
 
 async def main():

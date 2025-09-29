@@ -1,3 +1,13 @@
+"""
+Constants for panorama tile sizes and counts.
+
+ZOOM_SIZES: Post-2016 panorama sizes by zoom level.
+OLD_ZOOM_SIZES: Pre-2016 panorama sizes.
+TILES_AXIS_COUNT: Number of tiles along X and Y axes per zoom level.
+TILE_COUNT_TO_SIZE: Mapping of tile counts to panorama dimensions.
+TILE_SIZE: Tile dimension in pixels (square tiles).
+"""
+
 # year > 2016 
 ZOOM_SIZES = {
     0: (512, 256),

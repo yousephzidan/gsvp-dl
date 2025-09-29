@@ -1,3 +1,22 @@
+"""
+Core module for downloading, processing, and stitching Google Street View panoramas.
+
+This module provides asynchronous functions to:
+
+- Fetch individual panorama tiles from Google Street View with retry logic (`fetch_tile`).
+- Determine panorama dimensions based on zoom level and tile content (`determine_dimensions`).
+- Stitch multiple tiles into a single panorama image (`stitch_tiles`).
+- Process a single panorama by fetching tiles, determining dimensions, stitching, and saving (`process_panoid`).
+- Download and process multiple panoramas concurrently (`fetch_panos`).
+
+The module supports different zoom levels (0–5) and handles old (pre-2016) and new panorama formats.
+It uses asyncio for concurrent network requests and a process pool executor for CPU-bound tasks like image analysis.
+
+Dependencies:
+- aiohttp for asynchronous HTTP requests
+- PIL/Pillow for image processing
+- rich for colored logging
+"""
 import asyncio
 from concurrent.futures import ProcessPoolExecutor
 
@@ -239,7 +258,7 @@ async def fetch_panos(
     max_workers: int, 
     zoom_level: int, 
     panoids: list[str], 
-    output_dir: str = os.getcwd()
+    output_dir: Union[str, None] =  None
 ) -> tuple[int, int, str]:
    """
     Download and process multiple panoramas concurrently.
@@ -264,6 +283,8 @@ async def fetch_panos(
             - output_dir (str): Output directory where the panoramas are saved.
    """
    print("[green]| Running Scraper..[/]\n")
+
+   if output_dir is None: output_dir = os.getcwd()
 
    async with aiohttp.ClientSession(connector=connector) as session:
         with ProcessPoolExecutor(max_workers=max_workers) as executor:

@@ -1,3 +1,30 @@
+"""
+Unit and integration tests for the `core` module of the Google Street View
+Panorama Downloader.
+
+This test suite covers:
+
+- `fetch_tile`: verifies successful fetches, handling of black tiles, and
+  network failures.
+- `process_panoid`: tests panorama processing with mocked tiles, including
+  different zoom levels, empty results, and file saving.
+- `fetch_panos`: ensures batch panorama downloads handle partial or complete
+  failures, empty datasets, and correct file outputs.
+- `determine_dimensions`: validates fallback behavior and tile-based dimension
+  calculation.
+
+Utilities:
+- `dummy_image` and `dummy_image_bytes` provide in-memory images for testing.
+
+The tests use:
+- `pytest` with `pytest.mark.asyncio` for async test support.
+- `unittest.mock` and `monkeypatch` for patching async HTTP calls and
+  internal functions.
+- `tmp_path` fixtures to test file writing without polluting the filesystem.
+
+Usage:
+    pytest gsvpd/tests/test_core.py
+"""
 import pytest
 import asyncio
 from PIL import Image
@@ -8,7 +35,16 @@ from .. import core
 
 
 def dummy_image_bytes(size=(256, 256), color=(255, 0, 0)):
-    """Generate dummy image bytes for testing purposes."""
+    """
+    Generate dummy image bytes for testing.
+
+    Args:
+        size (tuple[int, int]): Width and height of the image.
+        color (tuple[int, int, int]): RGB color of the image.
+
+    Returns:
+        bytes: Image data in JPEG format.
+    """
     buf = BytesIO()
     Image.new('RGB', size, color).save(buf, format='JPEG')
     buf.seek(0)
@@ -16,12 +52,26 @@ def dummy_image_bytes(size=(256, 256), color=(255, 0, 0)):
 
 
 def dummy_image(size=(256, 256), color=(255, 0, 0)):
-    """Return a PIL Image object."""
+    """
+    Generate a PIL Image object for testing.
+
+    Args:
+        size (tuple[int, int]): Width and height of the image.
+        color (tuple[int, int, int]): RGB color of the image.
+
+    Returns:
+        PIL.Image.Image: Dummy image object.
+    """
     return Image.new('RGB', size, color)
 
 
 @pytest.mark.asyncio
 async def test_fetch_tile_success_mocked(monkeypatch):
+    """
+    Test fetch_tile with a successful mocked HTTP response.
+
+    Ensures that fetch_tile returns a tuple (x, y, Image) for a valid tile.
+    """
     sem = asyncio.Semaphore(1)
 
     class MockResponse:
@@ -51,6 +101,11 @@ async def test_fetch_tile_success_mocked(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_fetch_tile_black_tile_mocked(monkeypatch):
+    """
+    Test fetch_tile handling of a black tile.
+
+    If the tile size matches the black tile byte size, fetch_tile should return None.
+    """
     sem = asyncio.Semaphore(1)
 
     class MockResponse:
@@ -77,6 +132,11 @@ async def test_fetch_tile_black_tile_mocked(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_fetch_tile_failure():
+    """
+    Test fetch_tile behavior when network requests fail.
+
+    Ensures the function returns None after retries.
+    """
     session = AsyncMock()
     mock_response = AsyncMock()
     mock_response.__aenter__.side_effect = Exception("Network error")
@@ -89,6 +149,11 @@ async def test_fetch_tile_failure():
 
 @pytest.mark.asyncio
 async def test_process_panoid_success(monkeypatch, tmp_path):
+    """
+    Test process_panoid with mocked tiles to simulate successful panorama download.
+
+    Checks that the returned metadata is correct and the image file exists.
+    """
     async def fake_fetch_tile(session, panoid, x, y, sem_tile, zoom_level, **kwargs):
         return x, y, dummy_image((512, 512), (255, 0, 0))
 
@@ -114,6 +179,11 @@ async def test_process_panoid_success(monkeypatch, tmp_path):
 @pytest.mark.parametrize("zoom_level", [0, 1, 2, 3, 4, 5])
 @pytest.mark.asyncio
 async def test_different_zoom_levels(zoom_level, tmp_path):
+    """
+    Test process_panoid across different zoom levels with mocked tiles.
+
+    Ensures tiles and image metadata are correctly calculated for each zoom level.
+    """
     async def fake_fetch_tile(session, panoid, x, y, sem_tile, zl, **kwargs):
         return x, y, dummy_image((512, 512), (100 + x * 10, 100 + y * 10, 150))
 
@@ -152,6 +222,11 @@ async def test_different_zoom_levels(zoom_level, tmp_path):
 
 @pytest.mark.asyncio
 async def test_process_panoid_no_tiles(monkeypatch, tmp_path):
+    """
+    Test process_panoid behavior when no tiles are returned.
+
+    Ensures the function returns None.
+    """
     async def fake_fetch_tile(session, panoid, x, y, sem_tile, zoom_level, **kwargs):
         return None
 
@@ -170,6 +245,11 @@ async def test_process_panoid_no_tiles(monkeypatch, tmp_path):
 
 @pytest.mark.asyncio
 async def test_fetch_panos_with_failures(tmp_path, monkeypatch):
+    """
+    Test fetch_panos with some panoramas failing.
+
+    Ensures only successful panoramas are counted and saved.
+    """
     async def fake_fetch_tile(session, panoid, x, y, sem_tile, zoom_level, **kwargs):
         if panoid == "panoid2":
             return None
@@ -203,6 +283,11 @@ async def test_fetch_panos_with_failures(tmp_path, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_fetch_panos_empty_dataset(tmp_path):
+    """
+    Test fetch_panos when given an empty list of panoids.
+
+    Should return zero total and successful panoramas.
+    """
     panoids = []
 
     sem_pano = asyncio.Semaphore(10)
@@ -226,6 +311,11 @@ async def test_fetch_panos_empty_dataset(tmp_path):
 
 @pytest.mark.asyncio
 async def test_fetch_panos_all_failures(tmp_path, monkeypatch):
+    """
+    Test fetch_panos when all panorama fetches fail.
+
+    Ensures total count equals input panoids but successful count is zero.
+    """
     async def fake_fetch_tile(session, panoid, x, y, sem_tile, zoom_level, **kwargs):
         return None
 
@@ -253,6 +343,18 @@ async def test_fetch_panos_all_failures(tmp_path, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_determine_dimensions_fallback():
+    """
+    Test the `determine_dimensions` function fallback behavior for zoom levels
+    greater than 2 (where TILE_COUNT_TO_SIZE lookup is used).
+
+    - Creates a dummy PIL image wrapped in a single-tile list.
+    - Calls `determine_dimensions` with zoom level 3 and arbitrary tile counts.
+    - Verifies that the returned dimensions match the expected value from 
+      TILE_COUNT_TO_SIZE.
+
+    This ensures that `determine_dimensions` correctly falls back to the
+    tile-count mapping for higher zoom levels.
+    """
     img = Image.open(BytesIO(dummy_image_bytes()))
     tiles = [(0, 0, img)]
     result = await core.determine_dimensions(None, tiles, 3, 2, 2)

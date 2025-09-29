@@ -2,8 +2,8 @@ import asyncio
 import aiohttp
 from rich import print
 
-from gsvpd.core import fetch_panos
-from gsvpd.my_utils import (
+from gsvpd import fetch_panos
+from gsvpd import (
     open_dataset,
     parse_args,
     timer

@@ -1,3 +1,21 @@
+"""
+Utility module for Google Street View panorama processing.
+
+This module provides helper functions and classes for:
+
+- Timing code execution (`timer` context manager).
+- Analyzing panorama tiles for black pixels (`has_black_bottom`, `black_percentage`).
+- Loading datasets (`open_dataset`).
+- Parsing command-line arguments for the panorama downloader (`parse_args`).
+- Saving panorama images and formatting file sizes (`save_img`, `format_size`).
+
+Dependencies:
+- numpy for image pixel analysis
+- PIL/Pillow for image handling
+- rich for colored terminal output
+- argparse for CLI argument parsing
+- json and os for dataset management and file handling
+"""
 import numpy as np
 import time
 import json
@@ -87,19 +105,6 @@ def open_dataset(dataset_location: str) -> list[str]:
         return json.load(dataset)
 
 
-def limit_dataset(dataset: list[dict], limit_count: int) -> list[dict]:
-    """
-    Limit dataset size for testing or sampling.
-
-    Args:
-        dataset (list[dict]): Full dataset loaded from JSON.
-        limit_count (int): Maximum number of items to return.
-
-    Returns:
-        list[dict]: Subset of the dataset up to `limit_count` entries.
-    """
-    return dataset[:limit_count]
-
 
 def parse_args():
     """
@@ -150,7 +155,7 @@ def format_size(num_bytes: int) -> str:
         num_bytes /= 1024
     return f"{num_bytes:.2f} PB"
 
-def save_img(full_img: Image, output_dir: str, panoid: str, zoom_level: int) -> str:
+def save_img(full_img: Image.Image, output_dir: str, panoid: str, zoom_level: int) -> str:
     """
     Save a PIL image to disk in a structured directory layout and return its file size.
 
