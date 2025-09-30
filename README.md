@@ -1,8 +1,9 @@
 # Google Maps Street View Downloader
 
 [![Python](https://img.shields.io/badge/python-3.9+-blue)](https://www.python.org/)
+
 [Full API Documentation](https://yousephzidan.github.io/gsvp-dl/)
----
+
 
 ## Overview
 
