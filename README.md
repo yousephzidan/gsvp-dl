@@ -76,7 +76,6 @@ The entry point is `run.py`. Available arguments:
 python run.py --zoom 3 \
               --dataset ./dataset.json \
               --max-pano 100 \
-              --max-tile 100 \
               --workers 5 \
               --limit 500 \
               --conn-limit 100 \
@@ -89,7 +88,6 @@ python run.py --zoom 3 \
 * `--zoom (int, required)` – Zoom level (0–5)
 * `--dataset (str)` – Path to dataset JSON file (default: `./dataset.json`)
 * `--max-pano (int)` – Max concurrent pano downloads (default: 50)
-* `--max-tile (int)` – Max concurrent tiles per pano (default: 50)
 * `--workers (int)` – Max process pool workers (default: 20)
 * `--limit (int)` – Limit panoids for testing (default: None)
 * `--output (str)` – Output directory (default: current working dir)
@@ -112,14 +110,12 @@ async def main():
     dataset: list[str] = ["list of pano ids"]       
 
     sem_pano = asyncio.Semaphore(100)
-    sem_tile = asyncio.Semaphore(100)
-
     connector = aiohttp.TCPConnector(limit=100, limit_per_host=100)
 
     zoom_level: int = 2 
     workers: int = 5
 
-    return await fetch_panos(sem_pano, sem_tile, connector, workers, zoom_level, dataset)
+    return await fetch_panos(sem_pano, connector, workers, zoom_level, dataset)
     
 if __name__ == "__main__":
     try:

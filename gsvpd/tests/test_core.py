@@ -142,8 +142,7 @@ async def test_fetch_tile_failure():
     mock_response.__aenter__.side_effect = Exception("Network error")
     session.get.return_value = mock_response
 
-    sem = asyncio.Semaphore(1)
-    result = await core.fetch_tile(session, "fake_panoid", 0, 0, sem, 3, retries=2, backoff=0)
+    result = await core.fetch_tile(session, "fake_panoid", 0, 0, 3, retries=2, backoff=0)
     assert result is None
 
 
@@ -154,19 +153,18 @@ async def test_process_panoid_success(monkeypatch, tmp_path):
 
     Checks that the returned metadata is correct and the image file exists.
     """
-    async def fake_fetch_tile(session, panoid, x, y, sem_tile, zoom_level, **kwargs):
+    async def fake_fetch_tile(session, panoid, x, y, zoom_level, **kwargs):
         return x, y, dummy_image((512, 512), (255, 0, 0))
 
     monkeypatch.setattr(core, "fetch_tile", fake_fetch_tile)
 
     sem_pano = asyncio.Semaphore(1)
-    sem_tile = asyncio.Semaphore(2)
     session = None
     executor = None
     zoom_level = 3
     panoid = "fake_panoid"
 
-    result = await core.process_panoid(session, panoid, sem_pano, sem_tile, executor, zoom_level, tmp_path)
+    result = await core.process_panoid(session, panoid, sem_pano, executor, zoom_level, tmp_path)
     assert result is not None
     assert result["panoid"] == panoid
     assert result["zoom"] == zoom_level
@@ -184,7 +182,7 @@ async def test_different_zoom_levels(zoom_level, tmp_path):
 
     Ensures tiles and image metadata are correctly calculated for each zoom level.
     """
-    async def fake_fetch_tile(session, panoid, x, y, sem_tile, zl, **kwargs):
+    async def fake_fetch_tile(session, panoid, x, y, zl, **kwargs):
         return x, y, dummy_image((512, 512), (100 + x * 10, 100 + y * 10, 150))
 
     def sync_black_percentage(tile):
@@ -194,7 +192,6 @@ async def test_different_zoom_levels(zoom_level, tmp_path):
         return False
 
     sem_pano = asyncio.Semaphore(1)
-    sem_tile = asyncio.Semaphore(10)
     session = None
     panoid = f"fake_panoid_z{zoom_level}"
 
@@ -203,7 +200,7 @@ async def test_different_zoom_levels(zoom_level, tmp_path):
          patch("gsvpd.core.has_black_bottom", sync_has_black_bottom):
         executor = None
 
-        result = await core.process_panoid(session, panoid, sem_pano, sem_tile, executor, zoom_level, tmp_path)
+        result = await core.process_panoid(session, panoid, sem_pano, executor, zoom_level, tmp_path)
 
     assert result is not None
     assert result["panoid"] == panoid
@@ -227,19 +224,18 @@ async def test_process_panoid_no_tiles(monkeypatch, tmp_path):
 
     Ensures the function returns None.
     """
-    async def fake_fetch_tile(session, panoid, x, y, sem_tile, zoom_level, **kwargs):
+    async def fake_fetch_tile(session, panoid, x, y, zoom_level, **kwargs):
         return None
 
     monkeypatch.setattr(core, "fetch_tile", fake_fetch_tile)
 
     sem_pano = asyncio.Semaphore(1)
-    sem_tile = asyncio.Semaphore(2)
     session = None
     executor = None
     zoom_level = 3
     panoid = "expired_panoid"
 
-    result = await core.process_panoid(session, panoid, sem_pano, sem_tile, executor, zoom_level, tmp_path)
+    result = await core.process_panoid(session, panoid, sem_pano, executor, zoom_level, tmp_path)
     assert result is None
 
 
@@ -250,7 +246,7 @@ async def test_fetch_panos_with_failures(tmp_path, monkeypatch):
 
     Ensures only successful panoramas are counted and saved.
     """
-    async def fake_fetch_tile(session, panoid, x, y, sem_tile, zoom_level, **kwargs):
+    async def fake_fetch_tile(session, panoid, x, y, zoom_level, **kwargs):
         if panoid == "panoid2":
             return None
         return x, y, dummy_image((512, 512))
@@ -259,12 +255,10 @@ async def test_fetch_panos_with_failures(tmp_path, monkeypatch):
     panoids = ["panoid1", "panoid2", "panoid3"]
 
     sem_pano = asyncio.Semaphore(10)
-    sem_tile = asyncio.Semaphore(20)
     connector = core.aiohttp.TCPConnector(limit=10, limit_per_host=10)
 
     total_panos, successful_panos, output_dir = await core.fetch_panos(
         sem_pano,
-        sem_tile,
         connector,
         max_workers=2,
         zoom_level=3,
@@ -291,12 +285,10 @@ async def test_fetch_panos_empty_dataset(tmp_path):
     panoids = []
 
     sem_pano = asyncio.Semaphore(10)
-    sem_tile = asyncio.Semaphore(20)
     connector = core.aiohttp.TCPConnector(limit=10, limit_per_host=10)
 
     total_panos, successful_panos, output_dir = await core.fetch_panos(
         sem_pano,
-        sem_tile,
         connector,
         max_workers=2,
         zoom_level=3,
@@ -316,19 +308,17 @@ async def test_fetch_panos_all_failures(tmp_path, monkeypatch):
 
     Ensures total count equals input panoids but successful count is zero.
     """
-    async def fake_fetch_tile(session, panoid, x, y, sem_tile, zoom_level, **kwargs):
+    async def fake_fetch_tile(session, panoid, x, y, zoom_level, **kwargs):
         return None
 
     monkeypatch.setattr(core, "fetch_tile", fake_fetch_tile)
     panoids = ["fail1", "fail2", "fail3"]
 
     sem_pano = asyncio.Semaphore(10)
-    sem_tile = asyncio.Semaphore(20)
     connector = core.aiohttp.TCPConnector(limit=10, limit_per_host=10)
 
     total_panos, successful_panos, output_dir = await core.fetch_panos(
         sem_pano,
-        sem_tile,
         connector,
         max_workers=2,
         zoom_level=3,

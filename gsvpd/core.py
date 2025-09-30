@@ -49,7 +49,6 @@ async def fetch_tile(
     panoid: str,
     x: int, 
     y: int, 
-    sem_tile: int, 
     zoom_level: int, 
     retries: int = 3, 
     backoff: float = 0.2
@@ -62,7 +61,6 @@ async def fetch_tile(
         panoid (str): The panorama ID to fetch tiles from.
         x (int): Tile X index.
         y (int): Tile Y index.
-        sem_tile (asyncio.Semaphore): Semaphore to limit concurrent tile downloads.
         zoom_level (int): Zoom level (0–5).
         retries (int): Number of retry attempts on failure (default: 3).
         backoff (float): Initial backoff delay in seconds between retries (default: 1.0).
@@ -73,33 +71,32 @@ async def fetch_tile(
     """
     url = f"https://cbk0.google.com/cbk?output=tile&panoid={panoid}&zoom={zoom_level}&x={x}&y={y}"
 
-    async with sem_tile:
-        for attempt in range(1, retries + 1):
-            try:
-                async with session.get(url, timeout=ClientTimeout(30)) as response:
+    for attempt in range(1, retries + 1):
+        try:
+            async with session.get(url, timeout=ClientTimeout(30)) as response:
 
-                    if response.status != 200:
-                        return None
+                if response.status != 200:
+                    return None
 
-                    BLACK_TILE_BYTE_SIZE = 1184
-                    BLACK_TILE_SIZE = int(response.headers.get("Content-Length", 0))
+                BLACK_TILE_BYTE_SIZE = 1184
+                BLACK_TILE_SIZE = int(response.headers.get("Content-Length", 0))
 
-                    if BLACK_TILE_SIZE == BLACK_TILE_BYTE_SIZE:  # black tile
-                        return None
+                if BLACK_TILE_SIZE == BLACK_TILE_BYTE_SIZE:  # black tile
+                    return None
 
-                    data = await response.read()
-                    tile = Image.open(BytesIO(data))
-                    return (x, y, tile)
+                data = await response.read()
+                tile = Image.open(BytesIO(data))
+                return (x, y, tile)
 
-            except Exception as error:
-                if attempt < retries:
-                    wait_time = backoff * (2 ** (attempt - 1))  # exponential backoff
-                    print(f"[yellow][Retry] {attempt}/{retries} for tile ({x},{y}) pano `{panoid}` in {wait_time:.1f}s: {error}[/]")
-                    await asyncio.sleep(wait_time)
-                else:
-                    print(f"[red][TILE ERROR] Failed after {retries} retries for tile {x},{y} pano `{panoid}`: {error}[/]")
+        except Exception as error:
+            if attempt < retries:
+                wait_time = backoff * (2 ** (attempt - 1))  # exponential backoff
+                print(f"[yellow][Retry] {attempt}/{retries} for tile ({x},{y}) pano `{panoid}` in {wait_time:.1f}s: {error}[/]")
+                await asyncio.sleep(wait_time)
+            else:
+                print(f"[red][TILE ERROR] Failed after {retries} retries for tile {x},{y} pano `{panoid}`: {error}[/]")
 
-        return None
+    return None
 
 async def determine_dimensions(
     executor,
@@ -166,8 +163,7 @@ def stitch_tiles(tiles: list, width: int, height: int) -> Image.Image:
 async def process_panoid(
     session: aiohttp.ClientSession, 
     panoid: str, 
-    sem_pano: int, 
-    sem_tile: int, 
+    sem_pano: asyncio.Semaphore, 
     executor: ProcessPoolExecutor, 
     zoom_level: int, 
     output_dir: str
@@ -187,7 +183,6 @@ async def process_panoid(
         session (aiohttp.ClientSession): Active HTTP session.
         panoid (str): Panorama ID to fetch.
         sem_pano (asyncio.Semaphore): Semaphore to limit concurrent panorama downloads.
-        sem_tile (asyncio.Semaphore): Semaphore to limit concurrent tile downloads.
         executor (ProcessPoolExecutor): Executor for CPU-bound tasks.
         zoom_level (int): Zoom level (0–5).
         output_dir (str): Directory to save the panorama image.
@@ -209,7 +204,7 @@ async def process_panoid(
 
             # fetch tiles
             tasks = [
-                fetch_tile(session, panoid, x, y, sem_tile, zoom_level)
+                fetch_tile(session, panoid, x, y, zoom_level)
                 for x in range(tiles_x + 1)
                 for y in range(tiles_y + 1)
             ]
@@ -252,8 +247,7 @@ async def process_panoid(
         return None
 
 async def fetch_panos(
-    sem_pano: int, 
-    sem_tile: int, 
+    sem_pano: asyncio.Semaphore, 
     connector: aiohttp.TCPConnector, 
     max_workers: int, 
     zoom_level: int, 
@@ -265,7 +259,6 @@ async def fetch_panos(
 
     Args:
         sem_pano (asyncio.Semaphore): Semaphore to control concurrent pano downloads.
-        sem_tile (asyncio.Semaphore): Semaphore to control concurrent tile downloads.
         connector (aiohttp.TCPConnector): Connector with concurrency limits for aiohttp.
         max_workers (int): Max number of workers for the process pool (used for image checks).
         zoom_level (int): Zoom level (0–5).
@@ -288,7 +281,7 @@ async def fetch_panos(
 
    async with aiohttp.ClientSession(connector=connector) as session:
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
-            tasks = [process_panoid(session, panoid, sem_pano, sem_tile, executor, zoom_level, output_dir) for panoid in panoids]
+            tasks = [process_panoid(session, panoid, sem_pano, executor, zoom_level, output_dir) for panoid in panoids]
             tasks_res = await asyncio.gather(*tasks)
 
         success_panos = tuple(filter(lambda pano: pano is not None, tasks_res)) 
