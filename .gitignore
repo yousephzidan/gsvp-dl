@@ -3,3 +3,4 @@
 *.DS_Store
 *.pytest_cache
 *panos
+*downloads
