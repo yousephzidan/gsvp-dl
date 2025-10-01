@@ -111,12 +111,12 @@ def parse_args():
     Parse command-line arguments for the panorama downloader.
 
     Arguments:
-        --zoom (int, required): Zoom level (0–5).
-        --dataset (str, optional): Path to dataset JSON file. Default: ./dataset.json
-        --max-pano (int, optional): Max concurrent pano downloads. Default: 50
-        --max-tile (int, optional): Max concurrent tile downloads per pano. Default: 50
-        --workers (int, optional): Max process pool workers. Default: 20
-        --limit (int, optional): Limit panoids for testing. Default: None
+        --zoom (int, optional): Zoom level (0–5). (Default: 2.)
+        --dataset (str, required): Path to dataset JSON file. (Default: ./dataset.json)
+        --max-pano (int, optional): Max concurrent pano downloads. (Default: 50)
+        --workers (int, optional): Max process pool workers. (Default: 20)
+        --limit (int, optional): Limit panoids for testing. (Default: None)
+        --conn-limit (int, optional): Maximum TCP connections per host (default: 100)
 
     Returns:
         argparse.Namespace: Parsed arguments object.
@@ -125,15 +125,13 @@ def parse_args():
         description="Google Street View Panorama Downloader"
     )
 
-    parser.add_argument("--zoom", type=int, required=True, help="Zoom level (0-5)")
-    parser.add_argument("--dataset", type=str, default="./dataset.json", help="Path to dataset.json")
+    parser.add_argument("--zoom", type=int, default=2, help="Zoom level (0-5)")
+    parser.add_argument("--dataset", type=str, required=True, default="./dataset.json", help="Path to dataset.json")
     parser.add_argument("--max-pano", type=int, default=50, help="Max concurrent pano downloads")
-    parser.add_argument("--max-tile", type=int, default=50, help="Max concurrent tile downloads per pano")
     parser.add_argument("--workers", type=int, default=20, help="Max process pool workers")
     parser.add_argument("--limit", type=int, default=None, help="Limit panoids")
     parser.add_argument("--output", type=str, default=os.getcwd(), help="Output directory (default: current working directory)")
-    parser.add_argument("--conn-limit", type=int, default=20, help="Maximum total TCP connections (default: 20)")
-    parser.add_argument("--conn-limit-perh", type=int, default=20, help="Maximum TCP connections per host (default: 20)")
+    parser.add_argument("--conn-limit", type=int, default=100, help="Maximum TCP connections per host (default: 20)")
 
     return parser.parse_args()
 

@@ -164,7 +164,13 @@ async def test_process_panoid_success(monkeypatch, tmp_path):
     zoom_level = 3
     panoid = "fake_panoid"
 
-    result = await core.process_panoid(session, panoid, sem_pano, executor, zoom_level, tmp_path)
+    result = await core.process_panoid(session=session, 
+                                       panoid=panoid, 
+                                       sem_pano=sem_pano, 
+                                       executor=executor,
+                                       zoom_level=zoom_level,
+                                       output_dir= tmp_path
+                                       )
     assert result is not None
     assert result["panoid"] == panoid
     assert result["zoom"] == zoom_level
@@ -182,7 +188,11 @@ async def test_different_zoom_levels(zoom_level, tmp_path):
 
     Ensures tiles and image metadata are correctly calculated for each zoom level.
     """
-    async def fake_fetch_tile(session, panoid, x, y, zl, **kwargs):
+    async def fake_fetch_tile(session, 
+                              panoid, 
+                              x, 
+                              y, 
+                              zl, **kwargs):
         return x, y, dummy_image((512, 512), (100 + x * 10, 100 + y * 10, 150))
 
     def sync_black_percentage(tile):
@@ -200,7 +210,12 @@ async def test_different_zoom_levels(zoom_level, tmp_path):
          patch("gsvpd.core.has_black_bottom", sync_has_black_bottom):
         executor = None
 
-        result = await core.process_panoid(session, panoid, sem_pano, executor, zoom_level, tmp_path)
+        result = await core.process_panoid(session=session, 
+                                           panoid=panoid, 
+                                           sem_pano=sem_pano, 
+                                           executor=executor, 
+                                           zoom_level=zoom_level, 
+                                           output_dir=tmp_path)
 
     assert result is not None
     assert result["panoid"] == panoid

@@ -110,7 +110,7 @@ async def main():
     dataset: list[str] = ["list of pano ids"]       
 
     sem_pano = asyncio.Semaphore(100)
-    connector = aiohttp.TCPConnector(limit=100, limit_per_host=100)
+    connector = aiohttp.TCPConnector(limit_per_host=100)
 
     zoom_level: int = 2 
     workers: int = 5

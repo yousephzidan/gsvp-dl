@@ -16,7 +16,7 @@ async def main(args) -> tuple[int, int, str]:
         dataset = dataset[:limit]
 
     sem_pano = asyncio.Semaphore(args.max_pano)
-    connector = aiohttp.TCPConnector(limit=args.conn_limit, limit_per_host=args.conn_limit_perh)
+    connector = aiohttp.TCPConnector(limit_per_host=args.conn_limit)
 
     return await fetch_panos(sem_pano, connector, args.workers, args.zoom, dataset, args.output)
 
