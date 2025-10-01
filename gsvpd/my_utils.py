@@ -111,10 +111,10 @@ def parse_args():
     Parse command-line arguments for the panorama downloader.
 
     Arguments:
-        --zoom (int, optional): Zoom level (0–5). (Default: 2.)
+        --zoom (int, optional): Zoom level (0–5). (Default: 2)
         --dataset (str, required): Path to dataset JSON file. (Default: ./dataset.json)
         --max-pano (int, optional): Max concurrent pano downloads. (Default: 50)
-        --workers (int, optional): Max process pool workers. (Default: 20)
+        --workers (int, optional): Max process pool workers. (Default: 5)
         --limit (int, optional): Limit panoids for testing. (Default: None)
         --conn-limit (int, optional): Maximum TCP connections per host (default: 100)
 
@@ -128,10 +128,10 @@ def parse_args():
     parser.add_argument("--zoom", type=int, default=2, help="Zoom level (0-5)")
     parser.add_argument("--dataset", type=str, required=True, default="./dataset.json", help="Path to dataset.json")
     parser.add_argument("--max-pano", type=int, default=50, help="Max concurrent pano downloads")
-    parser.add_argument("--workers", type=int, default=20, help="Max process pool workers")
+    parser.add_argument("--workers", type=int, default=5, help="Max process pool workers")
     parser.add_argument("--limit", type=int, default=None, help="Limit panoids")
     parser.add_argument("--output", type=str, default=os.getcwd(), help="Output directory (default: current working directory)")
-    parser.add_argument("--conn-limit", type=int, default=100, help="Maximum TCP connections per host (default: 20)")
+    parser.add_argument("--conn-limit", type=int, default=100, help="Maximum TCP connections per host (default: 100)")
 
     return parser.parse_args()
 

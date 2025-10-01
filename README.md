@@ -25,7 +25,7 @@ It is optimized to download **millions of panoramas asynchronously**. Using Pyth
 Download panoramas from a dataset with a single command:
 
 ```bash
-python run.py --zoom 2 --dataset ./dataset.json --limit 100 --max-tile 100 --conn-limit 100 --conn-limit-perh 100 --output ./downloads
+python run.py --dataset ./dataset.json --limit 100 --conn-limit 100 --output ./downloads
 ```
 
 Example dataset (`dataset.json`):
@@ -73,26 +73,24 @@ pip install -r req.txt
 The entry point is `run.py`. Available arguments:
 
 ```bash
-python run.py --zoom 3 \
+python run.py --zoom 2 \
               --dataset ./dataset.json \
               --max-pano 100 \
               --workers 5 \
-              --limit 500 \
+              --limit 100 \
               --conn-limit 100 \
-              --conn-limit-perh 100 \
               --output ./downloads
 ```
 
 **Arguments:**
 
-* `--zoom (int, required)` – Zoom level (0–5)
-* `--dataset (str)` – Path to dataset JSON file (default: `./dataset.json`)
-* `--max-pano (int)` – Max concurrent pano downloads (default: 50)
-* `--workers (int)` – Max process pool workers (default: 20)
+* `--zoom (int)` – Zoom level (0–5) (default: 2)
+* `--dataset (str, required)` – Path to dataset JSON file (default: `./dataset.json`)
+* `--max-pano (int)` – Max concurrent pano downloads (default: 100)
+* `--workers (int)` – Max process pool workers (default: 5)
 * `--limit (int)` – Limit panoids for testing (default: None)
 * `--output (str)` – Output directory (default: current working dir)
-* `--conn-limit (int)` – Maximum total TCP connections for aiohttp (default: 20)
-* `--conn-limit-perh (int)` – Maximum TCP connections per host (default: 20)
+* `--conn-limit (int)` – Maximum total TCP connections per host (default: 100)
 
 ### As a Library
 
