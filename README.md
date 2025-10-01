@@ -56,7 +56,7 @@ Here are some example panoramas at different zoom levels:
 ![Zoom 0 example](example_panos/panos_z0/-0cRHfYuByN1eUvfjcF-Xg.jpg)
 
 **Zoom 1**
-![Zoom 1 example](example_panos/panos_z1-0cRHfYuByN1eUvfjcF-Xg.jpg)
+![Zoom 1 example](example_panos/panos_z1/-0cRHfYuByN1eUvfjcF-Xg.jpg)
 
 **Zoom 2**
 ![Zoom 2 example](example_panos/panos_z2/-0cRHfYuByN1eUvfjcF-Xg.jpg)
