@@ -174,7 +174,7 @@ This is how we can tell old panoramas (≤2016) from new ones (>2016) at differe
     - Old panoramas (≤2016) have extra black space at the bottom tiles.
     - New panoramas (>2016) do not have this extra black space.
 
-**New Panoramas Specs | After 2016**k
+**New Panoramas Specs | After 2016**
 
 | Zoom Level | Width | Height | X tiles | Y tiles | Notes                                         |
 | ---------- | ----- | ------ | ------- | ------- | --------------------------------------------- |
